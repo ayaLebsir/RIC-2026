@@ -63,3 +63,75 @@ ax.set_title('Dataset - Vérité Terrain (2000 points)')
 
 
 plt.show()
+
+
+# ----------------ÉTAPE 2 : MLP — Forward + ReLU + MSE uniquement-----------------
+
+
+class MLP:
+
+    def __init__(self, layer_sizes):
+        """
+        layer_sizes : ex [2, 64, 64, 1]
+        Initialisation Xavier des poids.
+        """
+        self.weights = []
+        self.biaises = []
+
+        for i in range(len(layer_sizes) - 1):
+            n_in  = layer_sizes[i]
+            n_out = layer_sizes[i + 1]
+            std   = np.sqrt(2.0 / n_in)   # He initialization
+            self.weights.append(np.random.randn(n_in, n_out) * std)
+            self.biaises.append(np.zeros((1, n_out)))
+
+    # ---- Activation ReLU ----
+
+    def relu(self, z):
+        """ReLU : remplace les valeurs négatives par 0"""
+        return np.maximum(0, z)
+
+    # ---- Passe avant (Forward) ----
+
+    def forward(self, X):
+        """
+        Propage X à travers toutes les couches.
+        Couches cachées  → ReLU
+        Couche de sortie → linéaire (régression)
+        """
+        a = X
+        for i, (W, b) in enumerate(zip(self.weights, self.biaises)):
+            z = a @ W + b                        # combinaison linéaire
+            if i < len(self.weights) - 1:
+                a = self.relu(z)                 # couche cachée
+            else:
+                a = z                            # sortie linéaire
+        return a
+
+    # ---- Fonction de perte MSE ----
+
+    def mse(self, y_pred, y_true):
+        """Mean Squared Error : moyenne de (y_pred - y_true)²"""
+        return np.mean((y_pred - y_true) ** 2)
+
+
+
+# ---------TEST----------------------------------------------------
+
+
+np.random.seed(42)
+mlp = MLP(layer_sizes=[2, 64, 64, 1])
+
+# Afficher l'architecture
+print("=== Architecture ===")
+for i, (W, b) in enumerate(zip(mlp.weights, mlp.biaises)):
+    print(f"  Couche {i+1} : W={W.shape}  b={b.shape}")
+
+# Forward pass
+y_true = z_norm.reshape(-1, 1)
+y_pred = mlp.forward(X_norm)
+
+# MSE (avant entraînement, les poids sont aléatoires)
+perte = mlp.mse(y_pred, y_true)
+print(f"\nMSE initiale (poids aléatoires) : {perte:.6f}")
+print(f"Shape sortie : {y_pred.shape}")   # doit être (2000, 1)
